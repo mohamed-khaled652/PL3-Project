@@ -76,3 +76,9 @@ let loginForm () =
 
     form.Controls.AddRange([| lblUsername; txtUsername; lblPassword; txtPassword; btnLogin |])
     form.ShowDialog() |> ignore
+//Main section
+[<STAThread>]
+do
+    Application.EnableVisualStyles()
+    Application.SetCompatibleTextRenderingDefault(false)
+    loginForm ()
