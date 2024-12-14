@@ -6,7 +6,6 @@ open MySql.Data.MySqlClient
 
 let connectionString = "Server=localhost;Port=3308;Database=sms;User ID=root;Password=;"
 
-//Student Functions Section
 let addStudent id username password name =
     use connection = new MySqlConnection(connectionString)
     connection.Open()
@@ -93,62 +92,19 @@ let deleteStudent id =
         MessageBox.Show($"Student with ID {id} deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information) |> ignore
     with ex -> MessageBox.Show($"Error deleting student: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
 
-//Forms Section
-let studentDetailsForm (parentForm: Form) =
-    let form = new Form(Text = "Students", Width = 600, Height = 550, BackColor = Color.LightBlue)
-    form.FormBorderStyle <- FormBorderStyle.Sizable
-    form.StartPosition <- FormStartPosition.CenterScreen
+let executeQuery (connectionString: string) (query: string)  =
+    let table = new DataTable()
+    use connection = new MySqlConnection(connectionString)
+    use command = new MySqlCommand(query, connection)
 
-    let commonFont = new Font("Arial", 12.0f, FontStyle.Regular)
-
-    let lblID = new Label(Text = "ID", Top = 50, Left = 70, ForeColor = Color.White, Font = commonFont)
-    let txtID = new TextBox(Top = 50, Left = 180, Width = 250, Font = commonFont)
-    let lblName = new Label(Text = "Name", Top = 130, Left = 70, ForeColor = Color.White, Font = commonFont)
-    let txtName = new TextBox(Top = 130, Left = 180, Width = 250, Font = commonFont)
-    let lblUsername = new Label(Text = "Username", Top = 210, Left = 70, ForeColor = Color.White, Font = commonFont)
-    let txtUsername = new TextBox(Top = 210, Left = 180, Width = 250, Font = commonFont)
-    let lblPassword = new Label(Text = "Password", Top = 290, Left = 70, ForeColor = Color.White, Font = commonFont)
-    let txtPassword = new TextBox(Top = 290, Left = 180, Width = 250, Font = commonFont)
-
-    let btnAdd = new Button(Text = "Add", Top = 350, Left = 40, Width = 150, Height = 40,BackColor = Color.LightCoral, Font = commonFont)
-    let btnEdit = new Button(Text = "Edit", Top = 350, Left = 220, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
-    let btnDelete = new Button(Text = "Delete", Top = 350, Left = 400, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
-    let btnExit = new Button(Text = "Exit", Top = 420, Left = 220, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
-
-    btnAdd.Click.Add(fun _ -> 
-        let id = txtID.Text
-        let name = txtName.Text  
-        let username = txtUsername.Text
-        let password = txtPassword.Text
-        if not (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(username) || String.IsNullOrEmpty(password)) then
-            addStudent id username password name 
-
-    )
-
-    btnEdit.Click.Add(fun _ -> 
-        let id = txtID.Text
-        let name = txtName.Text
-        let username = txtUsername.Text
-        let password = txtPassword.Text
-        if not (String.IsNullOrEmpty(id)) then
-            editStudent id name username password
-
-    )
-
-    btnDelete.Click.Add(fun _ -> 
-        let id = txtID.Text
-        if not (String.IsNullOrEmpty(id)) then
-            deleteStudent id
-
-    )
-
-    btnExit.Click.Add(fun _ -> 
-        form.Close()
-        parentForm.Show()
-    )
-
-    form.Controls.AddRange([| lblID; txtID; lblName; txtName; lblUsername; txtUsername; lblPassword; txtPassword; btnAdd; btnEdit; btnDelete; btnExit |])
-    form.ShowDialog() |> ignore
+    use adapter = new MySqlDataAdapter(command)
+    try
+        connection.Open()
+        adapter.Fill(table) |> ignore
+    with
+    | ex -> 
+        MessageBox.Show($"Database error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
+    table
 
 let superUserPanelForm () =
     let form = new Form(Text = "SuperUser Panel", Width = 600, Height = 350, BackColor = Color.LightBlue)
@@ -159,7 +115,8 @@ let superUserPanelForm () =
 
     let btnAddStudent = new Button(Text = "Student",Top = 50, Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
     let btnAddInstructor = new Button(Text = "Instructor", Top = 100,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
-    let btnExit = new Button(Text = "Exit", Top = 150,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
+    let btnAddcourse = new Button(Text = "Course", Top = 150,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
+    let btnExit = new Button(Text = "Exit", Top = 200,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
 
     btnAddStudent.Click.Add(fun _ -> 
         form.Hide()
@@ -171,9 +128,14 @@ let superUserPanelForm () =
         instructorDetailsForm form 
     )
 
+    btnAddcourse.Click.Add(fun _ -> 
+        form.Hide()
+        addcourseform form
+    )
+
     btnExit.Click.Add(fun _ -> form.Close())
 
-    form.Controls.AddRange([| btnAddStudent; btnAddInstructor; btnExit |])
+    form.Controls.AddRange([| btnAddStudent; btnAddInstructor;btnAddcourse; btnExit |])
 
 
 
