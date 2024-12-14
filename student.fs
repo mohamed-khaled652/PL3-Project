@@ -106,6 +106,80 @@ let executeQuery (connectionString: string) (query: string)  =
         MessageBox.Show($"Database error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
     table
 
+let studentDetailsForm (parentForm: Form) =
+    let form = new Form(Text = "Students", Width = 1500, Height = 1000, BackColor = Color.LightBlue)
+    form.FormBorderStyle <- FormBorderStyle.Sizable
+    form.StartPosition <- FormStartPosition.CenterScreen
+
+    let commonFont = new Font("Arial", 12.0f, FontStyle.Regular)
+
+    let lblID = new Label(Text = "ID", Top = 50, Left = 70, ForeColor = Color.White, Font = commonFont)
+    let txtID = new TextBox(Top = 50, Left = 180, Width = 250, Font = commonFont)
+    let lblName = new Label(Text = "Name", Top = 130, Left = 70, ForeColor = Color.White, Font = commonFont)
+    let txtName = new TextBox(Top = 130, Left = 180, Width = 250, Font = commonFont)
+    let lblUsername = new Label(Text = "Username", Top = 210, Left = 70, ForeColor = Color.White, Font = commonFont)
+    let txtUsername = new TextBox(Top = 210, Left = 180, Width = 250, Font = commonFont)
+    let lblPassword = new Label(Text = "Password", Top = 290, Left = 70, ForeColor = Color.White, Font = commonFont)
+    let txtPassword = new TextBox(Top = 290, Left = 180, Width = 250, Font = commonFont)
+
+    let btnAdd = new Button(Text = "Add", Top = 350, Left = 40, Width = 150, Height = 40,BackColor = Color.LightCoral, Font = commonFont)
+    let btnEdit = new Button(Text = "Edit", Top = 350, Left = 220, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
+    let btnDelete = new Button(Text = "Delete", Top = 350, Left = 400, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
+    let btnExit = new Button(Text = "Exit", Top = 420, Left = 220, Width = 150, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
+
+
+   
+    let dgvStudents = new DataGridView(Top = 50, Left = 600, Width = 850, Height = 900)
+    dgvStudents.Font <- commonFont
+    dgvStudents.AutoSizeColumnsMode <- DataGridViewAutoSizeColumnsMode.Fill
+    dgvStudents.ColumnHeadersHeightSizeMode <- DataGridViewColumnHeadersHeightSizeMode.AutoSize
+    dgvStudents.ReadOnly <- true
+
+    let loadData (connectionString: string) =
+        let query =  """SELECT u.ID, u.username, s.Name FROM users u JOIN students s ON u.ID = s.ID WHERE u.user_type = 'student';"""
+
+        let data = executeQuery connectionString query 
+        dgvStudents.DataSource <- data
+
+   
+    loadData connectionString
+
+    btnAdd.Click.Add(fun _ -> 
+        let id = txtID.Text
+        let name = txtName.Text  
+        let username = txtUsername.Text
+        let password = txtPassword.Text
+        if not (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(username) || String.IsNullOrEmpty(password)) then
+            addStudent id username password name 
+            loadData connectionString
+    )
+
+    btnEdit.Click.Add(fun _ -> 
+        let id = txtID.Text
+        let name = txtName.Text
+        let username = txtUsername.Text
+        let password = txtPassword.Text
+        if not (String.IsNullOrEmpty(id)) then
+            editStudent id name username password
+            loadData connectionString
+    )
+
+    btnDelete.Click.Add(fun _ -> 
+        let id = txtID.Text
+        if not (String.IsNullOrEmpty(id)) then
+            deleteStudent id
+            loadData connectionString
+    )
+
+    btnExit.Click.Add(fun _ -> 
+        form.Close()
+        parentForm.Show()
+    )
+
+    form.Controls.AddRange([| lblID; txtID; lblName; txtName; lblUsername; txtUsername; lblPassword; txtPassword; btnAdd; btnEdit; btnDelete; btnExit;dgvStudents |])
+    form.ShowDialog() |> ignore
+
+
 let superUserPanelForm () =
     let form = new Form(Text = "SuperUser Panel", Width = 600, Height = 350, BackColor = Color.LightBlue)
     form.FormBorderStyle <- FormBorderStyle.Sizable 
