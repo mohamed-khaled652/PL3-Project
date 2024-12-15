@@ -9,7 +9,8 @@ open System.Data
 let connectionString = "Server=localhost;Port=3308;Database=sms;User ID=root;Password=;"
 
 
-
+let ResetText (textbox: System.Windows.Forms.TextBox) =
+    textbox.Text <- ""
 //courses functions
 
 
