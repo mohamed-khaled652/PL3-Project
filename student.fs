@@ -3,7 +3,8 @@ open System.Drawing
 open System.Windows.Forms
 open MySql.Data.MySqlClient
 
-
+let ResetText (textbox: System.Windows.Forms.TextBox) =
+    textbox.Text <- ""
 let connectionString = "Server=localhost;Port=3308;Database=sms;User ID=root;Password=;"
 
 let addStudent id username password name =
@@ -91,7 +92,6 @@ let deleteStudent id =
 
         MessageBox.Show($"Student with ID {id} deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information) |> ignore
     with ex -> MessageBox.Show($"Error deleting student: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
-
 let executeQuery (connectionString: string) (query: string)  =
     let table = new DataTable()
     use connection = new MySqlConnection(connectionString)
@@ -135,6 +135,23 @@ let studentDetailsForm (parentForm: Form) =
     dgvStudents.ColumnHeadersHeightSizeMode <- DataGridViewColumnHeadersHeightSizeMode.AutoSize
     dgvStudents.ReadOnly <- true
 
+    let query1 = "SELECT ID FROM users WHERE user_type = 'student'"
+    let studentIDs = executeQuery connectionString query1
+    let autoCompleteCollection = new AutoCompleteStringCollection()
+    for row in studentIDs.Rows do
+        let studentID = row.["ID"].ToString()
+        autoCompleteCollection.Add(studentID)|>ignore
+
+    txtID.KeyPress.Add(fun e ->
+        if not (Char.IsDigit(e.KeyChar) || e.KeyChar = '\b') then  
+            e.Handled <- true 
+    )
+
+    txtID.AutoCompleteMode <- AutoCompleteMode.SuggestAppend
+    txtID.AutoCompleteSource <- AutoCompleteSource.CustomSource
+    txtID.AutoCompleteCustomSource <- autoCompleteCollection
+
+
     let loadData (connectionString: string) =
         let query =  """SELECT u.ID, u.username, s.Name FROM users u JOIN students s ON u.ID = s.ID WHERE u.user_type = 'student';"""
 
@@ -144,6 +161,7 @@ let studentDetailsForm (parentForm: Form) =
    
     loadData connectionString
 
+
     btnAdd.Click.Add(fun _ -> 
         let id = txtID.Text
         let name = txtName.Text  
@@ -151,24 +169,40 @@ let studentDetailsForm (parentForm: Form) =
         let password = txtPassword.Text
         if not (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(username) || String.IsNullOrEmpty(password)) then
             addStudent id username password name 
+            autoCompleteCollection.Add(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnEdit.Click.Add(fun _ -> 
         let id = txtID.Text
-        let name = txtName.Text
+        let name = txtName.Text  
         let username = txtUsername.Text
         let password = txtPassword.Text
         if not (String.IsNullOrEmpty(id)) then
             editStudent id name username password
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnDelete.Click.Add(fun _ -> 
         let id = txtID.Text
         if not (String.IsNullOrEmpty(id)) then
             deleteStudent id
+            autoCompleteCollection.Remove(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnExit.Click.Add(fun _ -> 
@@ -180,7 +214,7 @@ let studentDetailsForm (parentForm: Form) =
     form.ShowDialog() |> ignore
 
 
-let superUserPanelForm () =
+let superUserPanelForm (parentForm: Form) =
     let form = new Form(Text = "SuperUser Panel", Width = 600, Height = 350, BackColor = Color.LightBlue)
     form.FormBorderStyle <- FormBorderStyle.Sizable 
     form.StartPosition <- FormStartPosition.CenterScreen
@@ -190,7 +224,7 @@ let superUserPanelForm () =
     let btnAddStudent = new Button(Text = "Student",Top = 50, Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
     let btnAddInstructor = new Button(Text = "Instructor", Top = 100,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
     let btnAddcourse = new Button(Text = "Course", Top = 150,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
-    let btnExit = new Button(Text = "Exit", Top = 200,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
+    let btnExit = new Button(Text = "Log Out", Top = 200,Left = 180, Width = 250,Height = 40, Font = commonFont, BackColor = Color.LightCoral)
 
     btnAddStudent.Click.Add(fun _ -> 
         form.Hide()
@@ -207,7 +241,9 @@ let superUserPanelForm () =
         addcourseform form
     )
 
-    btnExit.Click.Add(fun _ -> form.Close())
+    btnExit.Click.Add(fun _ ->
+    form.Close()
+    parentForm.Show())
 
     form.Controls.AddRange([| btnAddStudent; btnAddInstructor;btnAddcourse; btnExit |])
 
