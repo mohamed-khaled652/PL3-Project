@@ -341,6 +341,14 @@ let addGradesForm (parentForm: Form) =
     let btndltGrade = new Button(Text = "Delete", Top = 350, Left = 180, Width = 250, Height = 40, Font = commonFont, BackColor = Color.LightCoral)
     let btnExit = new Button(Text = "Exit", Top = 400, Left = 180, Width = 250, Height = 40, Font = commonFont, BackColor = Color.LightCoral)
 
+    cmbCourse.DropDownStyle <- ComboBoxStyle.DropDown 
+    cmbCourse.AutoCompleteMode <- AutoCompleteMode.SuggestAppend 
+    cmbCourse.AutoCompleteSource <- AutoCompleteSource.ListItems 
+    cmbCourse.Validating.Add(fun _ ->
+        if not (cmbCourse.Items.Contains(cmbCourse.Text)) then
+            MessageBox.Show("Please select a valid course from the list.", "Invalid Course", MessageBoxButtons.OK, MessageBoxIcon.Warning)|> ignore
+            cmbCourse.Text <- "")
+
     let dgvStudents = new DataGridView(Top = 50, Left = 600, Width = 850, Height = 900)
     dgvStudents.Font <- commonFont
     dgvStudents.AutoSizeColumnsMode <- DataGridViewAutoSizeColumnsMode.Fill
@@ -361,6 +369,8 @@ let addGradesForm (parentForm: Form) =
 
 
     courses |> List.iter (fun (_, courseName) -> cmbCourse.Items.Add(courseName) |> ignore)
+
+
 
 
     let caseStatements =
@@ -385,7 +395,6 @@ let addGradesForm (parentForm: Form) =
 
     loadData ()
 
-
     btnAddGrade.Click.Add(fun _ ->
         let studentID = txtStudentID.Text
         let course = cmbCourse.SelectedItem.ToString()
@@ -395,7 +404,6 @@ let addGradesForm (parentForm: Form) =
             loadData ()
     )
 
- 
     btnupdGrade.Click.Add(fun _ ->
         let studentID = txtStudentID.Text
         let course = cmbCourse.SelectedItem.ToString()
@@ -405,7 +413,6 @@ let addGradesForm (parentForm: Form) =
             loadData ()
     )
 
-    
     btndltGrade.Click.Add(fun _ ->
         let studentID = txtStudentID.Text
         let course = cmbCourse.SelectedItem.ToString()
@@ -414,13 +421,11 @@ let addGradesForm (parentForm: Form) =
             loadData ()
     )
 
-    
     btnExit.Click.Add(fun _ ->
         form.Close()
         parentForm.Show()
     )
 
-    
     form.Controls.AddRange([| lblStudentID; txtStudentID; lblCourse; cmbCourse; lblGrade; txtGrade; btnAddGrade; btnupdGrade; btndltGrade; btnExit; dgvStudents |])
 
     form.ShowDialog() |> ignore
