@@ -6,7 +6,8 @@ open MySql.Data.MySqlClient
 
 let connectionString = "Server=localhost;Port=3308;Database=sms;User ID=root;Password=;"
 
-
+let ResetText (textbox: System.Windows.Forms.TextBox) =
+    textbox.Text <- ""
 //Instructor Functions Section
 let addInstructor id username password name =
     use connection = new MySqlConnection(connectionString)
@@ -96,7 +97,6 @@ let deleteInstructor id =
     with ex -> 
         MessageBox.Show($"Error deleting instructor: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
 
-
 let executeQuery (connectionString: string) (query: string)  =
     let table = new DataTable()
     use connection = new MySqlConnection(connectionString)
@@ -140,6 +140,23 @@ let instructorDetailsForm (parentForm: Form) =
     dgvStudents.ColumnHeadersHeightSizeMode <- DataGridViewColumnHeadersHeightSizeMode.AutoSize
     dgvStudents.ReadOnly <- true
 
+    let query1 = "SELECT ID FROM users WHERE user_type = 'instructor'"
+    let studentIDs = executeQuery connectionString query1
+    let autoCompleteCollection = new AutoCompleteStringCollection()
+    for row in studentIDs.Rows do
+        let studentID = row.["ID"].ToString()
+        autoCompleteCollection.Add(studentID)|>ignore
+
+    txtID.KeyPress.Add(fun e ->
+        if not (Char.IsDigit(e.KeyChar) || e.KeyChar = '\b') then  
+            e.Handled <- true 
+    )
+
+
+    txtID.AutoCompleteMode <- AutoCompleteMode.SuggestAppend
+    txtID.AutoCompleteSource <- AutoCompleteSource.CustomSource
+    txtID.AutoCompleteCustomSource <- autoCompleteCollection
+
     let loadData (connectionString: string) =
         let query =  """SELECT u.ID, u.username, i.Name FROM users u JOIN instructor i ON u.ID = i.ID WHERE u.user_type = 'instructor';"""
 
@@ -158,7 +175,13 @@ let instructorDetailsForm (parentForm: Form) =
         let password = txtPassword.Text
         if not (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(username) || String.IsNullOrEmpty(password)) then
             addInstructor id username password name
+            autoCompleteCollection.Add(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnEdit.Click.Add(fun _ -> 
@@ -169,13 +192,23 @@ let instructorDetailsForm (parentForm: Form) =
         if not (String.IsNullOrEmpty(id)) then
             editInstructor id name username password
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnDelete.Click.Add(fun _ -> 
         let id = txtID.Text
         if not (String.IsNullOrEmpty(id)) then
             deleteInstructor id
+            autoCompleteCollection.Remove(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
+            ResetText(txtID)
+            ResetText(txtName)
+            ResetText(txtUsername)
+            ResetText(txtPassword)
     )
 
     btnExit.Click.Add(fun _ -> 
