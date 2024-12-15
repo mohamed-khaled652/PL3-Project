@@ -12,18 +12,19 @@ let connectionString = "Server=localhost;Port=3308;Database=sms;User ID=root;Pas
 
 //courses functions
 
+
 let addCourse id course =
     use connection = new MySqlConnection(connectionString)
     connection.Open()
 
-    let queryUser = "INSERT INTO courses (ID, course) VALUES (@id, @course)"
-    use commandUser = new MySqlCommand(queryUser, connection)
-    commandUser.Parameters.AddWithValue("@id", id) |> ignore
-    commandUser.Parameters.AddWithValue("@course", course) |> ignore
+    let querycourse = "INSERT INTO courses (ID, course) VALUES (@id, @course)"
+    use commandcourse = new MySqlCommand(querycourse, connection)
+    commandcourse.Parameters.AddWithValue("@id", id) |> ignore
+    commandcourse.Parameters.AddWithValue("@course", course) |> ignore
  
 
     try
-        commandUser.ExecuteNonQuery() |> ignore
+        commandcourse.ExecuteNonQuery() |> ignore
         MessageBox.Show($"course with ID '{id}' and name '{course}' added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information) |> ignore
     with ex -> 
         MessageBox.Show($"Error adding course: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
@@ -35,21 +36,20 @@ let deleteCourse id =
 
     try
 
-        let queryStudent = "DELETE FROM courses WHERE ID = @id"
-        use commandStudent = new MySqlCommand(queryStudent, connection)
-        commandStudent.Parameters.AddWithValue("@id", id) |> ignore
-        commandStudent.ExecuteNonQuery() |> ignore
+        let querycourse = "DELETE FROM courses WHERE ID = @id"
+        use commandcourse = new MySqlCommand(querycourse, connection)
+        commandcourse.Parameters.AddWithValue("@id", id) |> ignore
+        commandcourse.ExecuteNonQuery() |> ignore
         
         MessageBox.Show($"course with ID {id} deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information) |> ignore
     with ex -> MessageBox.Show($"Error deleting course: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) |> ignore
-
 
 //Grades Functions Section
 let addGrade studentID courseName grade =
     use connection = new MySqlConnection(connectionString)
     connection.Open()
     try
-        
+       
         let queryCheckStudent = "SELECT COUNT(*) FROM users WHERE ID = @studentID"
         use commandCheckStudent = new MySqlCommand(queryCheckStudent, connection)
         commandCheckStudent.Parameters.AddWithValue("@studentID", studentID) |> ignore
@@ -60,7 +60,6 @@ let addGrade studentID courseName grade =
             | _ -> false
 
         if studentExists then
-           
             let queryGetCourseID = "SELECT ID FROM courses WHERE course = @courseName"
             use commandGetCourseID = new MySqlCommand(queryGetCourseID, connection)
             commandGetCourseID.Parameters.AddWithValue("@courseName", courseName) |> ignore
@@ -100,13 +99,11 @@ let updateGrade studentID courseName grade =
     try
         connection.Open()
 
-        
         let queryGetCourseID = "SELECT ID FROM courses WHERE course = @courseName"
         use commandGetCourseID = new MySqlCommand(queryGetCourseID, connection)
         commandGetCourseID.Parameters.AddWithValue("@courseName", courseName) |> ignore
         let courseID = commandGetCourseID.ExecuteScalar()
 
-        
         let queryCheck = "SELECT COUNT(*) FROM students_details WHERE ID = @studentID AND course_id = @courseID"
         use commandCheck = new MySqlCommand(queryCheck, connection)
         commandCheck.Parameters.AddWithValue("@studentID", studentID) |> ignore
@@ -118,7 +115,6 @@ let updateGrade studentID courseName grade =
             | _ -> false
 
         if recordExists then
-          
             let queryUpdate = "UPDATE students_details SET grades = @grade WHERE ID = @studentID AND course_id = @courseID"
             use commandUpdate = new MySqlCommand(queryUpdate, connection)
             commandUpdate.Parameters.AddWithValue("@studentID", studentID) |> ignore
@@ -140,13 +136,11 @@ let deleteGrade studentID courseName =
     try
         connection.Open()
 
-        
         let queryGetCourseID = "SELECT ID FROM courses WHERE course = @courseName"
         use commandGetCourseID = new MySqlCommand(queryGetCourseID, connection)
         commandGetCourseID.Parameters.AddWithValue("@courseName", courseName) |> ignore
         let courseID = commandGetCourseID.ExecuteScalar()
 
-      
         let queryCheck = "SELECT COUNT(*) FROM students_details WHERE ID = @studentID AND course_id = @courseID"
         use commandCheck = new MySqlCommand(queryCheck, connection)
         commandCheck.Parameters.AddWithValue("@studentID", studentID) |> ignore
@@ -158,7 +152,6 @@ let deleteGrade studentID courseName =
             | _ -> false
 
         if recordExists then
-           
             let queryDelete = "DELETE FROM students_details WHERE ID = @studentID AND course_id = @courseID"
             use commandDelete = new MySqlCommand(queryDelete, connection)
             commandDelete.Parameters.AddWithValue("@studentID", studentID) |> ignore
@@ -218,18 +211,8 @@ let viewCourseStatistics () =
     connection.Open()
     try
 
-        let query = "
-            SELECT 
-                c.course AS Course, 
-                MIN(sd.grades) AS LowestGrade, 
-                MAX(sd.grades) AS HighestGrade, 
-                SUM(CASE WHEN sd.grades >= 50 THEN 1 ELSE 0 END) AS PassCount,
-                SUM(CASE WHEN sd.grades < 50 THEN 1 ELSE 0 END) AS FailCount,
-                COUNT(*) AS TotalStudents
-            FROM students_details sd
-            JOIN courses c ON sd.course_id = c.ID
-            GROUP BY c.course
-        "
+        let query = "SELECT c.course AS Course, CASE WHEN MIN(sd.grades) IS NULL THEN NULL ELSE MIN(sd.grades) END AS LowestGrade, CASE WHEN MAX(sd.grades) IS NULL THEN NULL ELSE MAX(sd.grades) END AS HighestGrade, CASE WHEN COUNT(sd.id) = 0 THEN NULL ELSE ROUND(100.0 * SUM(CASE WHEN sd.grades >= 50 THEN 1 ELSE 0 END) / COUNT(sd.id), 2) END AS PassRate, CASE WHEN COUNT(sd.id) = 0 THEN NULL ELSE ROUND(100.0 * SUM(CASE WHEN sd.grades < 50 THEN 1 ELSE 0 END) / COUNT(sd.id), 2) END AS FailRate, CASE WHEN COUNT(sd.id) = 0 THEN NULL ELSE COUNT(sd.id) END AS TotalStudents FROM courses c LEFT JOIN students_details sd ON c.ID = sd.course_id GROUP BY c.course;"
+
         use command = new MySqlCommand(query, connection)
         use reader = command.ExecuteReader()
 
@@ -257,7 +240,6 @@ let executeQuery (connectionString: string) (query: string)  =
     table
 
 
-
 let addcourseform(parentForm: Form)=
     let form = new Form(Text = "courses", Width = 1500, Height = 1000, BackColor = Color.LightBlue)
     form.FormBorderStyle <- FormBorderStyle.Sizable
@@ -281,6 +263,22 @@ let addcourseform(parentForm: Form)=
     dgvStudents.ColumnHeadersHeightSizeMode <- DataGridViewColumnHeadersHeightSizeMode.AutoSize
     dgvStudents.ReadOnly <- true
 
+    let query1 = "SELECT ID FROM courses"
+    let studentIDs = executeQuery connectionString query1
+    let autoCompleteCollection = new AutoCompleteStringCollection()
+    for row in studentIDs.Rows do
+        let studentID = row.["ID"].ToString()
+        autoCompleteCollection.Add(studentID)|>ignore
+
+    txtID.KeyPress.Add(fun e ->
+        if not (Char.IsDigit(e.KeyChar) || e.KeyChar = '\b') then  
+            e.Handled <- true 
+    )
+
+    txtID.AutoCompleteMode <- AutoCompleteMode.SuggestAppend
+    txtID.AutoCompleteSource <- AutoCompleteSource.CustomSource
+    txtID.AutoCompleteCustomSource <- autoCompleteCollection
+
     let loadData (connectionString: string) =
         let query = "SELECT DISTINCT ID,course FROM courses"
 
@@ -298,6 +296,9 @@ let addcourseform(parentForm: Form)=
 
         if not (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(name)) then
             addCourse id name
+
+            autoCompleteCollection.Add(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
     )
 
@@ -306,6 +307,8 @@ let addcourseform(parentForm: Form)=
         let id = txtID.Text
         if not (String.IsNullOrEmpty(id)) then
             deleteCourse id
+            autoCompleteCollection.Remove(id) |> ignore
+            txtID.AutoCompleteCustomSource <- autoCompleteCollection
             loadData connectionString
     )
 
@@ -319,13 +322,13 @@ let addcourseform(parentForm: Form)=
     form.ShowDialog() |> ignore
 
 
-
 let addGradesForm (parentForm: Form) =
     use connection = new MySqlConnection(connectionString)
     connection.Open()
 
     let form = new Form(Text = "Add Grades and Courses", Width = 1500, Height = 1000, BackColor = Color.LightBlue)
-    form.FormBorderStyle <- FormBorderStyle.Sizable
+    form.FormBorderStyle <- FormBorderStyle.Sizable  
+    form.StartPosition <- FormStartPosition.CenterScreen
 
     let commonFont = new Font("Arial", 12.0f, FontStyle.Regular)
 
@@ -341,7 +344,9 @@ let addGradesForm (parentForm: Form) =
     let btndltGrade = new Button(Text = "Delete", Top = 350, Left = 180, Width = 250, Height = 40, Font = commonFont, BackColor = Color.LightCoral)
     let btnExit = new Button(Text = "Exit", Top = 400, Left = 180, Width = 250, Height = 40, Font = commonFont, BackColor = Color.LightCoral)
 
-    cmbCourse.DropDownStyle <- ComboBoxStyle.DropDown 
+    
+
+
     cmbCourse.AutoCompleteMode <- AutoCompleteMode.SuggestAppend 
     cmbCourse.AutoCompleteSource <- AutoCompleteSource.ListItems 
     cmbCourse.Validating.Add(fun _ ->
@@ -355,7 +360,23 @@ let addGradesForm (parentForm: Form) =
     dgvStudents.ColumnHeadersHeightSizeMode <- DataGridViewColumnHeadersHeightSizeMode.AutoSize
     dgvStudents.ReadOnly <- true
 
+    let query1 = "SELECT ID FROM users WHERE user_type = 'student'"
+    let studentIDs = executeQuery connectionString query1
+    let autoCompleteCollection = new AutoCompleteStringCollection()
+    for row in studentIDs.Rows do
+        let studentID = row.["ID"].ToString()
+        autoCompleteCollection.Add(studentID)|>ignore
 
+
+    txtStudentID.AutoCompleteMode <- AutoCompleteMode.SuggestAppend
+    txtStudentID.AutoCompleteSource <- AutoCompleteSource.CustomSource
+    txtStudentID.AutoCompleteCustomSource <- autoCompleteCollection
+
+    txtStudentID.KeyPress.Add(fun e ->
+        if not (Char.IsDigit(e.KeyChar) || e.KeyChar = '\b') then  
+            e.Handled <- true 
+    )
+    
     let query = "SELECT ID, course FROM courses"
     use command = new MySqlCommand(query, connection)
     use reader = command.ExecuteReader()
@@ -432,8 +453,11 @@ let addGradesForm (parentForm: Form) =
 
 
 let viewCourseStatisticsForm (parentForm: Form) =
-    let form = new Form(Text = "Course Statistics", Width = 1500, Height = 1000, BackColor = Color.LightBlue)
 
+
+    let form = new Form(Text = "Course Statistics", Width = 1500, Height = 1000, BackColor = Color.LightBlue)
+    form.FormBorderStyle <- FormBorderStyle.Sizable  
+    form.StartPosition <- FormStartPosition.CenterScreen
     let commonFont = new Font("Arial", 12.0f, FontStyle.Regular)
 
 
@@ -462,7 +486,7 @@ let viewCourseStatisticsForm (parentForm: Form) =
     form.ShowDialog() |> ignore
 
 
-let instructorPanelForm () =
+let instructorPanelForm (parentForm:Form) =
     let form = new Form(Text = "Instructor Panel", Width = 600, Height = 300, BackColor = Color.LightBlue)
     form.FormBorderStyle <- FormBorderStyle.Sizable  
     form.StartPosition <- FormStartPosition.CenterScreen
@@ -471,7 +495,7 @@ let instructorPanelForm () =
 
     let btnAddStudent = new Button(Text = "Grades",Top=50,Left=200, Width = 200, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
     let btndtlStudent = new Button(Text = "Courses Details",Top=100,Left=200, Width = 200, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
-    let btnExit = new Button(Text = "Exit",Top=150,Left=200, Width = 200, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
+    let btnExit = new Button(Text = "Log Out",Top=150,Left=200, Width = 200, Height = 40, BackColor = Color.LightCoral, Font = commonFont)
 
 
     btnAddStudent.Click.Add(fun _ -> 
@@ -484,6 +508,7 @@ let instructorPanelForm () =
     )
     btnExit.Click.Add(fun _ -> 
         form.Close()
+        parentForm.Show()
     )
 
     form.Controls.AddRange([| btnAddStudent;btndtlStudent; btnExit |])
